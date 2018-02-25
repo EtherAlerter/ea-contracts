@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
-import './Ownable.sol';
+import "./Ownable.sol";
+
 
 contract Alerter is Ownable {
 
