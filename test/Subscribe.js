@@ -13,6 +13,10 @@ contract('Alerter', accounts => {
       assert(true);
     })
 
+    xit('should create more alert types', async () => {
+      assert(true);
+    })
+
     xit('should change the price of an alert type', async () => {
       // should not be callable by anyone but the owner
       assert(true);
