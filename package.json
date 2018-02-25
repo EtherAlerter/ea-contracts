@@ -6,7 +6,9 @@
   "directories": {
     "test": "test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zeppelin-solidity": "1.7.0"
+  },
   "devDependencies": {
     "coveralls": "^3.0.0",
     "sol-merger": "^0.1.2",
