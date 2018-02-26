@@ -11,6 +11,9 @@
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
+    "eslint": "^4.18.1",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0",
     "sol-merger": "^0.1.2",
     "solidity-coverage": "^0.4.10",
     "solium": "^1.1.5",
@@ -22,7 +25,8 @@
     "coverage": "./node_modules/.bin/solidity-coverage",
     "deploy-ropsten": "./node_modules/.bin/truffle migrate --network ropsten",
     "deploy-ganache": "./node_modules/.bin/truffle migrate --network ganache",
-    "lint": "./node_modules/.bin/solium --dir contracts/",
+    "solium": "./node_modules/.bin/solium --dir contracts/",
+    "lint": "./node_modules/.bin/eslint .",
     "test": "./node_modules/.bin/truffle test"
   },
   "repository": {
