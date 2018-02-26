@@ -1,9 +1,15 @@
 /* eslint-env node, mocha */
 const Alerter = artifacts.require('../contracts/Alerter.sol'); // eslint-disable-line no-undef
 const expectThrow = require('./helpers/expectThrow.js');
+const BigNumber = require('bignumber.js');
+
+const should = require('chai')
+    .use(require('chai-as-promised'))
+    .use(require('chai-bignumber')(BigNumber))
+    .should();
 
 contract('Alerter', (accounts) => {
-  // const creator = accounts[0];
+  const creator = accounts[0];
   const owner = accounts[1];
   const cust1 = accounts[2];
   // const cust2 = accounts[3];
@@ -28,30 +34,43 @@ contract('Alerter', (accounts) => {
 
     it('should create a new alert type', async () => {
       await alerter.addAlertType('SMS', smsprice, { from: owner });
-      assert(web3.toUtf8(await alerter.getAlertTypeName(0)) === 'SMS');
-      assert(await alerter.getAlertTypeActive(0));
-      assert.deepEqual(smsprice, await alerter.getAlertTypePrice(0));
+      (web3.toUtf8(await alerter.getAlertTypeName(0))).should.be.equal('SMS');
+      (await alerter.getAlertTypeActive(0)).should.be.true;
+      (await alerter.getAlertTypePrice(0)).should.be.bignumber.equal(smsprice);
     });
 
     it('should create more alert types', async () => {
       await alerter.addAlertType('Email', emailprice, { from: owner });
-      assert(web3.toUtf8(await alerter.getAlertTypeName(1)) === 'Email');
-      assert(await alerter.getAlertTypeActive(1));
-      assert.deepEqual(emailprice, await alerter.getAlertTypePrice(1));
+      (web3.toUtf8(await alerter.getAlertTypeName(1))).should.be.equal('Email');
+      (await alerter.getAlertTypeActive(1)).should.be.true;
+      (await alerter.getAlertTypePrice(1)).should.be.bignumber.equal(emailprice);
       await alerter.addAlertType('Webhook', webhookprice, { from: owner });
-      assert(web3.toUtf8(await alerter.getAlertTypeName(2)) === 'Webhook');
-      assert(await alerter.getAlertTypeActive(2));
-      assert.deepEqual(webhookprice, await alerter.getAlertTypePrice(2));
+      (web3.toUtf8(await alerter.getAlertTypeName(2))).should.be.equal('Webhook');
+      (await alerter.getAlertTypeActive(2)).should.be.true;
+      (await alerter.getAlertTypePrice(2)).should.be.bignumber.equal(webhookprice);
     });
 
-    xit('should change the price of an alert type', async () => {
+    it('non-owners should not be able to change the price of an alert type', async () => {
       // should not be callable by anyone but the owner
-      assert(true);
+      await expectThrow(alerter.setAlertTypePrice(0, smsprice * 2, { from: creator }));
     });
 
-    xit('should retire an alert type', async () => {
-      // should not be callable by anyone but the owner
-      assert(true);
+    it('should change the price of an alert type', async () => {
+      await alerter.setAlertTypePrice(0, smsprice * 2, { from: owner });
+      (await alerter.getAlertTypePrice(0, { from: owner })).should.be.bignumber.equal(smsprice * 2);
+      await alerter.setAlertTypePrice(0, smsprice, { from: owner });
+    });
+
+    it('non-owners should not be able to retire an alert type', async () => {
+      await expectThrow(alerter.setAlertTypeActive(0, false, { from: creator }));
+    });
+
+    it('should retire an alert type', async () => {
+      let result;
+      await alerter.setAlertTypeActive(0, false, { from: owner });
+      (await alerter.getAlertTypeActive(0)).should.be.false;
+      await alerter.setAlertTypeActive(0, true, { from: owner });
+      (await alerter.getAlertTypeActive(0)).should.be.true;
     });
   });
 
