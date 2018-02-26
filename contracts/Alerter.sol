@@ -30,7 +30,7 @@ contract Alerter is Ownable {
   }
 
   function setAlertTypeActive(uint id, bool active) public onlyOwner {
-   alertTypes[id].active = active;
+    alertTypes[id].active = active;
   }
 
   function getAlertTypePrice(uint id) view public returns (uint) {

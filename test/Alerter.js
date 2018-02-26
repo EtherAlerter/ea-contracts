@@ -1,12 +1,13 @@
 /* eslint-env node, mocha */
+/* eslint no-unused-expressions: 0 */
 const Alerter = artifacts.require('../contracts/Alerter.sol'); // eslint-disable-line no-undef
 const expectThrow = require('./helpers/expectThrow.js');
 const BigNumber = require('bignumber.js');
 
-const should = require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .should();
+const should = require('chai') // eslint-disable-line no-unused-vars
+  .use(require('chai-as-promised'))
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
 
 contract('Alerter', (accounts) => {
   const creator = accounts[0];
@@ -66,7 +67,6 @@ contract('Alerter', (accounts) => {
     });
 
     it('should retire an alert type', async () => {
-      let result;
       await alerter.setAlertTypeActive(0, false, { from: owner });
       (await alerter.getAlertTypeActive(0)).should.be.false;
       await alerter.setAlertTypeActive(0, true, { from: owner });
