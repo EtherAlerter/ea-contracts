@@ -76,6 +76,21 @@ contract('Alerter', (accounts) => {
   });
 
   context('create subscription', () => {
+    it('only owner should set the subscription threshold', async () => {
+      await expectThrow(alerter.setSubscriptionThreshold(200, { from: creator }));
+    });
+
+    it('owner should get/set the subscription threshold', async () => {
+      (await alerter.getSubscriptionThreshold()).toNumber().should.equal(100);
+      await alerter.setSubscriptionThreshold(200, { from: owner });
+      (await alerter.getSubscriptionThreshold()).toNumber().should.equal(200);
+      await alerter.setSubscriptionThreshold(100, { from: owner });
+    });
+
+    xit('should fail to create a subscription due to no balance', async () => {
+      assert(true);
+    });
+
     xit('should create a subscription given 100x the price of an alert type', async () => {
       assert(true);
     });

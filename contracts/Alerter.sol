@@ -13,7 +13,10 @@ contract Alerter is Ownable {
 
   AlertType[] public alertTypes;
 
+  uint public subscriptionThreshold;
+
   function Alerter() public {
+    subscriptionThreshold = 100;
   }
 
   function addAlertType(bytes id, uint price) public onlyOwner returns (uint) {
@@ -39,5 +42,13 @@ contract Alerter is Ownable {
 
   function setAlertTypePrice(uint id, uint price) public onlyOwner {
     alertTypes[id].price = price;
+  }
+
+  function getSubscriptionThreshold() view public returns (uint) {
+    return subscriptionThreshold;
+  }
+
+  function setSubscriptionThreshold(uint value) public onlyOwner {
+    subscriptionThreshold = value;
   }
 }
