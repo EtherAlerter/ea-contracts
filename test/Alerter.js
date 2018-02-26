@@ -15,6 +15,7 @@ contract('Alerter', (accounts) => {
   const cust1 = accounts[2];
   // const cust2 = accounts[3];
   const smsprice = new web3.BigNumber(web3.toWei(0.0001, 'ether')); // eslint-disable-line no-undef
+  const newsmsprice = new web3.BigNumber(web3.toWei(0.0003, 'ether')); // eslint-disable-line no-undef
   const emailprice = new web3.BigNumber(web3.toWei(0.00001, 'ether')); // eslint-disable-line no-undef
   const webhookprice = new web3.BigNumber(web3.toWei(0.0, 'ether')); // eslint-disable-line no-undef
 
@@ -53,12 +54,12 @@ contract('Alerter', (accounts) => {
 
     it('non-owners should not be able to change the price of an alert type', async () => {
       // should not be callable by anyone but the owner
-      await expectThrow(alerter.setAlertTypePrice(0, smsprice * 2, { from: creator }));
+      await expectThrow(alerter.setAlertTypePrice(0, smsprice, { from: creator }));
     });
 
     it('should change the price of an alert type', async () => {
-      await alerter.setAlertTypePrice(0, smsprice * 2, { from: owner });
-      (await alerter.getAlertTypePrice(0, { from: owner })).should.be.bignumber.equal(smsprice * 2);
+      await alerter.setAlertTypePrice(0, newsmsprice, { from: owner });
+      (await alerter.getAlertTypePrice(0)).should.be.bignumber.equal(newsmsprice);
       await alerter.setAlertTypePrice(0, smsprice, { from: owner });
     });
 
