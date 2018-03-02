@@ -73,25 +73,35 @@ contract('Alerter', (accounts) => {
       await alerter.setAlertTypeActive(0, true, { from: owner });
       (await alerter.getAlertTypeActive(0)).should.be.true;
     });
+
+    it('should validate alert types', async () => {
+      await expectThrow(alerter.getAlertTypePrice(8));
+      await expectThrow(alerter.setAlertTypePrice(8, newsmsprice, { from: owner }));
+      await expectThrow(alerter.getAlertTypeActive(8));
+      await expectThrow(alerter.setAlertTypeActive(8, true, { from: owner }));
+    });
+
+  });
+
+  context('buy tokens at original price', () => {
+    it('should require at least the price of a single token', async () => {
+      await expectThrow(alerter.buyTokens(0, { from: cust1, value: smsprice / 2 }));
+    });
+
+    it('should buy a token', async () => {
+      await alerter.buyTokens(0, { from: cust1, value: smsprice});
+      (await alerter.getTokenBalance(0, cust1 )).toNumber().should.be.equal(1);
+
+    });
+
+    it('should validate alert types', async () => {
+      await expectThrow(alerter.buyTokens(8, { from: cust1, value: smsprice}));
+      await expectThrow(alerter.getTokenBalance(8, cust1));
+    });
   });
 
   context('create subscription', () => {
-    it('only owner should set the subscription threshold', async () => {
-      await expectThrow(alerter.setSubscriptionThreshold(200, { from: creator }));
-    });
-
-    it('owner should get/set the subscription threshold', async () => {
-      (await alerter.getSubscriptionThreshold()).toNumber().should.equal(100);
-      await alerter.setSubscriptionThreshold(200, { from: owner });
-      (await alerter.getSubscriptionThreshold()).toNumber().should.equal(200);
-      await alerter.setSubscriptionThreshold(100, { from: owner });
-    });
-
-    xit('should fail to create a subscription due to no balance', async () => {
-      assert(true);
-    });
-
-    xit('should create a subscription given 100x the price of an alert type', async () => {
+    xit('should create a new subscription given a value of the alert type', async () => {
       assert(true);
     });
 
