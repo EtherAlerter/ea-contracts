@@ -80,7 +80,6 @@ contract('Alerter', (accounts) => {
       await expectThrow(alerter.getAlertTypeActive(8));
       await expectThrow(alerter.setAlertTypeActive(8, true, { from: owner }));
     });
-
   });
 
   context('buy tokens at original price', () => {
@@ -89,13 +88,12 @@ contract('Alerter', (accounts) => {
     });
 
     it('should buy a token', async () => {
-      await alerter.buyTokens(0, { from: cust1, value: smsprice});
-      (await alerter.getTokenBalance(0, cust1 )).toNumber().should.be.equal(1);
-
+      await alerter.buyTokens(0, { from: cust1, value: smsprice });
+      (await alerter.getTokenBalance(0, cust1)).toNumber().should.be.equal(1);
     });
 
     it('should validate alert types', async () => {
-      await expectThrow(alerter.buyTokens(8, { from: cust1, value: smsprice}));
+      await expectThrow(alerter.buyTokens(8, { from: cust1, value: smsprice }));
       await expectThrow(alerter.getTokenBalance(8, cust1));
     });
   });
