@@ -82,24 +82,22 @@ contract('Alerter', (accounts) => {
     });
   });
 
-  context('buy tokens at original price', () => {
-    it('should require at least the price of a single token', async () => {
-      await expectThrow(alerter.buyTokens(0, { from: cust1, value: smsprice / 2 }));
+  context('manage deposits', () => {
+    it('should have insufficient funds for an SMS', async () => {
+      (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(0);
     });
-
-    it('should buy a token', async () => {
-      await alerter.buyTokens(0, { from: cust1, value: smsprice });
-      (await alerter.getTokenBalance(0, cust1)).toNumber().should.be.equal(1);
+    it('should have no funds to refund', async () => {
+      await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
     });
-
-    it('should overpay for a token', async () => {
-      await alerter.buyTokens(0, { from: cust1, value: smsprice * 1.5 });
-      // todo: check balance, etc
+    it('should deposit funds for one SMS', async () => {
+      await web3.eth.sendTransaction({ from: cust1, to: alerter.address, value: smsprice });
+      (await alerter.getDepositBalance(cust1)).should.be.bignumber.equal(smsprice);
     });
-
-    it('should validate alert types', async () => {
-      await expectThrow(alerter.buyTokens(8, { from: cust1, value: smsprice }));
-      await expectThrow(alerter.getTokenBalance(8, cust1));
+    it('should have funds for one SMS', async () => {
+      (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(1);
+    });
+    it('should refund deposited balance on request', async () => {
+      await alerter.refundDepositBalance({ from: cust1 });
     });
   });
 

@@ -5,6 +5,9 @@ import "./Ownable.sol";
 
 contract Alerter is Ownable {
 
+  event BalanceDeposited(address from, uint value);
+  event BalanceRefunded(address to, uint value);
+
   struct AlertType {
     bytes name;
     bool active;
@@ -18,7 +21,15 @@ contract Alerter is Ownable {
 
   AlertType[] public alertTypes;
 
+  // Available balance
+  mapping(address => uint) public alertBalances;
+
   function Alerter() public {
+  }
+
+  function () public payable {
+    alertBalances[msg.sender] += msg.value;
+    BalanceDeposited(msg.sender, msg.value);
   }
 
   function addAlertType(bytes id, uint price) public onlyOwner returns (uint) {
@@ -46,19 +57,22 @@ contract Alerter is Ownable {
     alertTypes[id].price = price;
   }
 
-  function getTokenBalance(uint id, address holder) onlyValidAlertType(id) view public returns (uint) {
-    // TODO: IMPL
-    return 1;
+  // Determine how many alerts of the given type can be sent with the current balance
+  function getAlertBalance(uint id, address holder) onlyValidAlertType(id) view public returns (uint) {
+    return alertBalances[holder] / alertTypes[id].price;
   }
 
-  function buyTokens(uint id) onlyValidAlertType(id) public payable returns (uint) {
-    require(msg.value >= alertTypes[id].price);
-    uint256 tokens = msg.value / alertTypes[id].price;
-    // TODO: add tokens to map
-    uint overpayment = msg.value - (alertTypes[id].price * tokens);
-    if (overpayment > 0) {
-      msg.sender.transfer(overpayment);
-    }
-    return tokens;
+  // Determine the current deposit balance
+  function getDepositBalance(address holder) view public returns (uint) {
+    return alertBalances[holder];
+  }
+
+  // Claim a refund of the current deposit balance.
+  function refundDepositBalance() public {
+    uint balance = alertBalances[msg.sender];
+    require(balance > 0);
+    alertBalances[msg.sender] = 0;
+    BalanceRefunded(msg.sender, balance);
+    msg.sender.transfer(balance);
   }
 }
