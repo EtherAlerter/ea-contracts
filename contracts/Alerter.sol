@@ -48,7 +48,6 @@ contract Alerter is Ownable {
 
   function getTokenBalance(uint id, address holder) onlyValidAlertType(id) view public returns (uint) {
     // TODO: IMPL
-    require(holder != 0); // defeat unused variable check
     return 1;
   }
 
@@ -56,6 +55,10 @@ contract Alerter is Ownable {
     require(msg.value >= alertTypes[id].price);
     uint256 tokens = msg.value / alertTypes[id].price;
     // TODO: add tokens to map
+    uint overpayment = msg.value - (alertTypes[id].price * tokens);
+    if (overpayment > 0) {
+      msg.sender.transfer(overpayment);
+    }
     return tokens;
   }
 }

@@ -92,6 +92,11 @@ contract('Alerter', (accounts) => {
       (await alerter.getTokenBalance(0, cust1)).toNumber().should.be.equal(1);
     });
 
+    it('should overpay for a token', async () => {
+      await alerter.buyTokens(0, { from: cust1, value: smsprice * 1.5 });
+      // todo: check balance, etc
+    });
+
     it('should validate alert types', async () => {
       await expectThrow(alerter.buyTokens(8, { from: cust1, value: smsprice }));
       await expectThrow(alerter.getTokenBalance(8, cust1));
