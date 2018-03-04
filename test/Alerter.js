@@ -13,7 +13,9 @@ contract('Alerter', (accounts) => {
   const creator = accounts[0];
   const owner = accounts[1];
   const cust1 = accounts[2];
-  // const cust2 = accounts[3];
+  const cust2 = accounts[3];
+  const cust3 = accounts[4];
+  const cust4 = accounts[5];
   const smsprice = new web3.BigNumber(web3.toWei(0.0001, 'ether')); // eslint-disable-line no-undef
   const newsmsprice = new web3.BigNumber(web3.toWei(0.0003, 'ether')); // eslint-disable-line no-undef
   const emailprice = new web3.BigNumber(web3.toWei(0.00001, 'ether')); // eslint-disable-line no-undef
@@ -102,43 +104,40 @@ contract('Alerter', (accounts) => {
   });
 
   context('create subscription', () => {
-    xit('should create a new subscription given a value of the alert type', async () => {
-      assert(true);
-    });
-
-    xit('should create another subscription given that the balance on account is 100x the price of an alert type', async () => {
-      assert(true);
+    it('should create a new subscription with sent eth', async () => {
+      await alerter.createSubscription(0, { from: cust2, value: smsprice });
     });
   });
 
   context('fail to create subscription due to insufficient funds', () => {
-    xit('should fail to create a subscription', async () => {
-      assert(true);
+    it('should fail to create a subscription', async () => {
+      await expectThrow(alerter.createSubscription(0, { from: cust3 }));
     });
 
-    xit('should allow user to add funds', async () => {
-      assert(true);
+    it('should allow user to add funds', async () => {
+      await web3.eth.sendTransaction({ from: cust3, to: alerter.address, value: smsprice });
     });
 
-    xit('should allow user to create a subscription', async () => {
-      assert(true);
-    });
-
-    xit('should fail to create a subscription for an alert type for which there are insufficient funds, < 10x', async () => {
+    it('should allow user to create a subscription', async () => {
+      await alerter.createSubscription(0, { from: cust3 });
     });
   });
 
   context('cancel subscription', () => {
-    xit('should create a subscription', async () => {
-      assert(true);
+    let id;
+    it('should create a new subscription with sent eth', async () => {
+      const result = await alerter.createSubscription(0, { from: cust4, value: smsprice });
+      result.logs[1].event.should.be.equal('SubscriptionCreated');
+      id = result.logs[1].args.id;
     });
 
-    xit('should cancel the subscription', async () => {
-      assert(true);
+    it('should cancel the subscription', async () => {
+      const result = await alerter.cancelSubscription(id, { from: cust4 });
+      result.logs[0].event.should.be.equal('SubscriptionCancelled');
     });
 
-    xit('should get their money back', async () => {
-      assert(true);
+    it('should get their money back', async () => {
+      await alerter.refundDepositBalance({ from: cust4 });
     });
   });
 });

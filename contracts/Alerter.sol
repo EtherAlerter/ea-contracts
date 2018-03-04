@@ -7,6 +7,8 @@ contract Alerter is Ownable {
 
   event BalanceDeposited(address from, uint value);
   event BalanceRefunded(address to, uint value);
+  event SubscriptionCreated(address from, bytes32 id, bytes info);
+  event SubscriptionCancelled(address from, bytes32 id);
 
   struct AlertType {
     bytes name;
@@ -22,14 +24,13 @@ contract Alerter is Ownable {
   AlertType[] public alertTypes;
 
   // Available balance
-  mapping(address => uint) public alertBalances;
+  mapping(address => uint) internal alertBalances;
 
   function Alerter() public {
   }
 
   function () public payable {
-    alertBalances[msg.sender] += msg.value;
-    BalanceDeposited(msg.sender, msg.value);
+    receiveFunds();
   }
 
   function addAlertType(bytes id, uint price) public onlyOwner returns (uint) {
@@ -74,5 +75,26 @@ contract Alerter is Ownable {
     alertBalances[msg.sender] = 0;
     BalanceRefunded(msg.sender, balance);
     msg.sender.transfer(balance);
+  }
+
+  function createSubscription(bytes info) public payable returns (bytes32) {
+    // You can subscribe and make a deposit in a single call
+    if (msg.value > 0) {
+      receiveFunds();
+    }
+    // But whichever way you must have a balance to create a subscription
+    require(getDepositBalance(msg.sender) > 0);
+    bytes32 id = keccak256(msg.data, block.number);
+    SubscriptionCreated(msg.sender, id, info);
+    return id;
+  }
+
+  function cancelSubscription(bytes32 id) public {
+    SubscriptionCancelled(msg.sender, id);
+  }
+
+  function receiveFunds() internal {
+    alertBalances[msg.sender] += msg.value;
+    BalanceDeposited(msg.sender, msg.value);
   }
 }
