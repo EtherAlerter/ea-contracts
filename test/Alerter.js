@@ -1,6 +1,6 @@
 /* eslint-env node, mocha */
 /* eslint no-unused-expressions: 0 */
-const Alerter = artifacts.require('../contracts/Alerter.sol'); // eslint-disable-line no-undef
+const Alerter = artifacts.require('../contracts/Alerter.sol');
 const expectThrow = require('./helpers/expectThrow.js');
 const BigNumber = require('bignumber.js');
 
