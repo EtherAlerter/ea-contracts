@@ -64,12 +64,13 @@ contract Alerter is Ownable {
     return alertBalances[holder] / alertTypes[alertTypeID].price;
   }
 
-  // Determine the current deposit balance
+  // Fetch the current deposit balance
   function getDepositBalance(address holder) view public returns (uint) {
     return alertBalances[holder];
   }
 
-  // Claim a refund of the current deposit balance.
+  // Claim a refund of the current deposit balance. Any subscriptions still active
+  // will be paused until there is balance again.
   function refundDepositBalance() public {
     uint balance = alertBalances[msg.sender];
     require(balance > 0);
@@ -78,6 +79,9 @@ contract Alerter is Ownable {
     msg.sender.transfer(balance);
   }
 
+  // Call this with the necessary (encrypted) metadata to log a subscription.
+  // To reduce storage costs the actual subscription information is not stored
+  // in contract, only in the log.
   function createSubscription(bytes info) public payable returns (bytes32) {
     // You can subscribe and make a deposit in a single call
     if (msg.value > 0) {
@@ -90,16 +94,24 @@ contract Alerter is Ownable {
     return subscriptionID;
   }
 
+  // Writes a message to the log that the subcription is cancelled.
+  // The alerter service will ignore it if it wasn't written by the original
+  // subcriber.
   function cancelSubscription(bytes32 subscriptionID) public {
     SubscriptionCancelled(msg.sender, subscriptionID);
   }
 
+  // Called by the alerter service to charge the customer for an alert that
+  // has been sent.
   function recordAlert(uint alertTypeID, address customer, bytes32 id) public onlyValidAlertType(alertTypeID) onlyOwner {
+    // Customer must have a balance
     require(alertBalances[customer] >= alertTypes[alertTypeID].price);
+    // Deduct fee from customer balance
     alertBalances[customer] -= alertTypes[alertTypeID].price;
     AlertRecorded(alertTypeID, customer, id);
   }
 
+  // Helper function which records customer deposits
   function receiveFunds() internal {
     alertBalances[msg.sender] += msg.value;
     BalanceDeposited(msg.sender, msg.value);
