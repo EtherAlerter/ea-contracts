@@ -17,10 +17,10 @@ contract('Alerter', (accounts) => {
   const cust3 = accounts[4];
   const cust4 = accounts[5];
   const cust5 = accounts[6];
-  const smsprice = new web3.BigNumber(web3.toWei(0.0001, 'ether')); // eslint-disable-line no-undef
-  const newsmsprice = new web3.BigNumber(web3.toWei(0.0003, 'ether')); // eslint-disable-line no-undef
-  const emailprice = new web3.BigNumber(web3.toWei(0.00001, 'ether')); // eslint-disable-line no-undef
-  const webhookprice = new web3.BigNumber(web3.toWei(0.0, 'ether')); // eslint-disable-line no-undef
+  const smsprice = new web3.BigNumber(web3.toWei(0.0001, 'ether'));
+  const newsmsprice = new web3.BigNumber(web3.toWei(0.0003, 'ether'));
+  const emailprice = new web3.BigNumber(web3.toWei(0.00001, 'ether'));
+  const webhookprice = new web3.BigNumber(web3.toWei(0.0, 'ether'));
 
   let alerter;
   before(async () => {
