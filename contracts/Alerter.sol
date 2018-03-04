@@ -9,6 +9,7 @@ contract Alerter is Ownable {
   event BalanceRefunded(address to, uint value);
   event SubscriptionCreated(address from, bytes32 id, bytes info);
   event SubscriptionCancelled(address from, bytes32 id);
+  event AlertRecorded(uint alertTypeID, address from, bytes32 id);
 
   struct AlertType {
     bytes name;
@@ -33,34 +34,34 @@ contract Alerter is Ownable {
     receiveFunds();
   }
 
-  function addAlertType(bytes id, uint price) public onlyOwner returns (uint) {
-    AlertType memory atype = AlertType(id, true, price);
+  function addAlertType(bytes alertTypeID, uint price) public onlyOwner returns (uint) {
+    AlertType memory atype = AlertType(alertTypeID, true, price);
     return alertTypes.push(atype);
   }
 
-  function getAlertTypeName(uint id) onlyValidAlertType(id) view public returns (bytes) {
-    return alertTypes[id].name;
+  function getAlertTypeName(uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (bytes) {
+    return alertTypes[alertTypeID].name;
   }
 
-  function getAlertTypeActive(uint id) onlyValidAlertType(id) view public returns (bool) {
-    return alertTypes[id].active;
+  function getAlertTypeActive(uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (bool) {
+    return alertTypes[alertTypeID].active;
   }
 
-  function setAlertTypeActive(uint id, bool active) onlyValidAlertType(id) public onlyOwner {
-    alertTypes[id].active = active;
+  function setAlertTypeActive(uint alertTypeID, bool active) onlyValidAlertType(alertTypeID) public onlyOwner {
+    alertTypes[alertTypeID].active = active;
   }
 
-  function getAlertTypePrice(uint id) onlyValidAlertType(id) view public returns (uint) {
-    return alertTypes[id].price;
+  function getAlertTypePrice(uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (uint) {
+    return alertTypes[alertTypeID].price;
   }
 
-  function setAlertTypePrice(uint id, uint price) onlyValidAlertType(id) public onlyOwner {
-    alertTypes[id].price = price;
+  function setAlertTypePrice(uint alertTypeID, uint price) onlyValidAlertType(alertTypeID) public onlyOwner {
+    alertTypes[alertTypeID].price = price;
   }
 
   // Determine how many alerts of the given type can be sent with the current balance
-  function getAlertBalance(uint id, address holder) onlyValidAlertType(id) view public returns (uint) {
-    return alertBalances[holder] / alertTypes[id].price;
+  function getAlertBalance(uint alertTypeID, address holder) onlyValidAlertType(alertTypeID) view public returns (uint) {
+    return alertBalances[holder] / alertTypes[alertTypeID].price;
   }
 
   // Determine the current deposit balance
@@ -84,13 +85,19 @@ contract Alerter is Ownable {
     }
     // But whichever way you must have a balance to create a subscription
     require(getDepositBalance(msg.sender) > 0);
-    bytes32 id = keccak256(msg.data, block.number);
-    SubscriptionCreated(msg.sender, id, info);
-    return id;
+    bytes32 subscriptionID = keccak256(msg.data, block.number);
+    SubscriptionCreated(msg.sender, subscriptionID, info);
+    return subscriptionID;
   }
 
-  function cancelSubscription(bytes32 id) public {
-    SubscriptionCancelled(msg.sender, id);
+  function cancelSubscription(bytes32 subscriptionID) public {
+    SubscriptionCancelled(msg.sender, subscriptionID);
+  }
+
+  function recordAlert(uint alertTypeID, address customer, bytes32 id) public onlyValidAlertType(alertTypeID) onlyOwner {
+    require(alertBalances[customer] >= alertTypes[alertTypeID].price);
+    alertBalances[customer] -= alertTypes[alertTypeID].price;
+    AlertRecorded(alertTypeID, customer, id);
   }
 
   function receiveFunds() internal {

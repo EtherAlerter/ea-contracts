@@ -16,6 +16,7 @@ contract('Alerter', (accounts) => {
   const cust2 = accounts[3];
   const cust3 = accounts[4];
   const cust4 = accounts[5];
+  const cust5 = accounts[6];
   const smsprice = new web3.BigNumber(web3.toWei(0.0001, 'ether')); // eslint-disable-line no-undef
   const newsmsprice = new web3.BigNumber(web3.toWei(0.0003, 'ether')); // eslint-disable-line no-undef
   const emailprice = new web3.BigNumber(web3.toWei(0.00001, 'ether')); // eslint-disable-line no-undef
@@ -88,18 +89,26 @@ contract('Alerter', (accounts) => {
     it('should have insufficient funds for an SMS', async () => {
       (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(0);
     });
+
     it('should have no funds to refund', async () => {
       await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
     });
+
     it('should deposit funds for one SMS', async () => {
       await web3.eth.sendTransaction({ from: cust1, to: alerter.address, value: smsprice });
       (await alerter.getDepositBalance(cust1)).should.be.bignumber.equal(smsprice);
     });
+
     it('should have funds for one SMS', async () => {
       (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(1);
     });
+
     it('should refund deposited balance on request', async () => {
       await alerter.refundDepositBalance({ from: cust1 });
+    });
+
+    it('should only be able to refund when there is balance', async () => {
+      await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
     });
   });
 
@@ -138,6 +147,20 @@ contract('Alerter', (accounts) => {
 
     it('should get their money back', async () => {
       await alerter.refundDepositBalance({ from: cust4 });
+    });
+  });
+
+  context('record alert', () => {
+    it('should record the alert when the provider sends it', async () => {
+      let result = await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      result.logs[1].event.should.be.equal('SubscriptionCreated');
+      const id = result.logs[1].args.id;
+      result = await alerter.recordAlert(0, cust5, id, { from: owner });
+      result.logs[0].event.should.be.equal('AlertRecorded');
+    });
+
+    it('should have consumed the balance with that alert', async () => {
+      await expectThrow(alerter.refundDepositBalance({ from: cust5 }));
     });
   });
 });
