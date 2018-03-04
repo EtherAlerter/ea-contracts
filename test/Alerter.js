@@ -155,6 +155,8 @@ contract('Alerter', (accounts) => {
       let result = await alerter.createSubscription(0, { from: cust5, value: smsprice });
       result.logs[1].event.should.be.equal('SubscriptionCreated');
       const id = result.logs[1].args.id; // eslint-disable-line prefer-destructuring
+      // should not allow a non-owner to record an alert
+      await expectThrow(alerter.recordAlert(0, cust5, id));
       result = await alerter.recordAlert(0, cust5, id, { from: owner });
       result.logs[0].event.should.be.equal('AlertRecorded');
     });
