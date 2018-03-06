@@ -87,28 +87,28 @@ contract('Alerter', (accounts) => {
 
   context('manage deposits', () => {
     it('should have insufficient funds for an SMS', async () => {
-      (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriberAlertBalance(cust1, 0)).toNumber().should.be.equal(0);
     });
 
     it('should have no funds to refund', async () => {
-      await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
+      await expectThrow(alerter.refundSubscriberBalance({ from: cust1 }));
     });
 
     it('should deposit funds for one SMS', async () => {
       await web3.eth.sendTransaction({ from: cust1, to: alerter.address, value: smsprice });
-      (await alerter.getDepositBalance(cust1)).should.be.bignumber.equal(smsprice);
+      (await alerter.getSubscriberBalance(cust1)).should.be.bignumber.equal(smsprice);
     });
 
     it('should have funds for one SMS', async () => {
-      (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriberAlertBalance(cust1, 0)).toNumber().should.be.equal(1);
     });
 
     it('should refund deposited balance on request', async () => {
-      await alerter.refundDepositBalance({ from: cust1 });
+      await alerter.refundSubscriberBalance({ from: cust1 });
     });
 
     it('should only be able to refund when there is balance', async () => {
-      await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
+      await expectThrow(alerter.refundSubscriberBalance({ from: cust1 }));
     });
   });
 
@@ -127,17 +127,37 @@ contract('Alerter', (accounts) => {
       await web3.eth.sendTransaction({ from: cust3, to: alerter.address, value: smsprice });
     });
 
+    it('should have no subscriptions', async () => {
+      (await alerter.getSubscriptionCount(cust3)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriptionActiveCount(cust3)).toNumber().should.be.equal(0);
+    });
+
     it('should allow user to create a subscription', async () => {
       await alerter.createSubscription(0, { from: cust3 });
+    });
+
+    it('should have one subscription', async () => {
+      (await alerter.getSubscriptionCount(cust3)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust3)).toNumber().should.be.equal(1);
     });
   });
 
   context('cancel subscription', () => {
     let id;
+    it('should have no subscriptions', async () => {
+      (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriptionActiveCount(cust4)).toNumber().should.be.equal(0);
+    });
+
     it('should create a new subscription with sent eth', async () => {
       const result = await alerter.createSubscription(0, { from: cust4, value: smsprice });
       result.logs[1].event.should.be.equal('SubscriptionCreated');
       id = result.logs[1].args.id; // eslint-disable-line prefer-destructuring
+    });
+
+    it('should have one subscription', async () => {
+      (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust4)).toNumber().should.be.equal(1);
     });
 
     it('should cancel the subscription', async () => {
@@ -145,8 +165,13 @@ contract('Alerter', (accounts) => {
       result.logs[0].event.should.be.equal('SubscriptionCancelled');
     });
 
+    it('should have one cancelled subscription', async () => {
+      (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust4)).toNumber().should.be.equal(0);
+    });
+
     it('should get their money back', async () => {
-      await alerter.refundDepositBalance({ from: cust4 });
+      await alerter.refundSubscriberBalance({ from: cust4 });
     });
   });
 
@@ -155,14 +180,52 @@ contract('Alerter', (accounts) => {
       let result = await alerter.createSubscription(0, { from: cust5, value: smsprice });
       result.logs[1].event.should.be.equal('SubscriptionCreated');
       const id = result.logs[1].args.id; // eslint-disable-line prefer-destructuring
+      // subscription should be active
+      (await alerter.getSubscriptionActive(cust5, id)).should.be.true;
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(1);
       // should not allow a non-owner to record an alert
       await expectThrow(alerter.recordAlert(0, cust5, id));
       result = await alerter.recordAlert(0, cust5, id, { from: owner });
       result.logs[0].event.should.be.equal('AlertRecorded');
+      // should fail to record an alert for a zero-balance customer
+      await expectThrow(alerter.recordAlert(0, cust5, id, { from: owner }));
+      // subscription should still be active, though
+      (await alerter.getSubscriptionActive(cust5, id)).should.be.true;
     });
 
     it('should have consumed the balance with that alert', async () => {
-      await expectThrow(alerter.refundDepositBalance({ from: cust5 }));
+      await expectThrow(alerter.refundSubscriberBalance({ from: cust5 }));
+      // but the subscription should still be active
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(1);
+    });
+
+    it('should handle lots of subscriptions', async () => {
+      (await alerter.getSubscriptionActive(cust5, 0)).should.be.true;
+      await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      (await alerter.getSubscriptionActive(cust5, 1)).should.be.true;
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(2);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(2);
+      await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      await alerter.createSubscription(0, { from: cust5 });
+      await alerter.createSubscription(0, { from: cust5 });
+      await alerter.createSubscription(0, { from: cust5 });
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(6);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(6);
+      await alerter.cancelSubscription(1, { from: cust5 });
+      // can't cancel the same subscription twice
+      await expectThrow(alerter.cancelSubscription(1, { from: cust5 }));
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(6);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(5);
+      (await alerter.getSubscriptionActive(cust5, 1)).should.be.false;
+      await alerter.createSubscription(0, { from: cust5 });
+      await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      await alerter.cancelSubscription(4, { from: cust5 });
+      (await alerter.getSubscriptionActive(cust5, 4)).should.be.false;
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(6);
+      await alerter.createSubscription(0, { from: cust5 });
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(9);
     });
   });
 });
