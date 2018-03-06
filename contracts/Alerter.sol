@@ -65,7 +65,7 @@ contract Alerter is Ownable {
   }
 
   // Determine how many alerts of the given type can be sent with the current balance
-  function getAlertBalance(uint alertTypeID, address subscriber) onlyValidAlertType(alertTypeID) view public returns (uint) {
+  function getSubscriberAlertBalance(address subscriber, uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (uint) {
     return subscribers[subscriber].balance / alertTypes[alertTypeID].price;
   }
 
@@ -78,7 +78,7 @@ contract Alerter is Ownable {
     return subscribers[subscriber].subscriptions.length;
   }
 
-  function getActiveSubscriptionCount(address subscriber) view public returns (uint) {
+  function getSubscriptionActiveCount(address subscriber) view public returns (uint) {
     return subscribers[subscriber].activeSubscriptions;
   }
 

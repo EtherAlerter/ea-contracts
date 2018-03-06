@@ -87,7 +87,7 @@ contract('Alerter', (accounts) => {
 
   context('manage deposits', () => {
     it('should have insufficient funds for an SMS', async () => {
-      (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriberAlertBalance(cust1, 0)).toNumber().should.be.equal(0);
     });
 
     it('should have no funds to refund', async () => {
@@ -100,7 +100,7 @@ contract('Alerter', (accounts) => {
     });
 
     it('should have funds for one SMS', async () => {
-      (await alerter.getAlertBalance(0, cust1)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriberAlertBalance(cust1, 0)).toNumber().should.be.equal(1);
     });
 
     it('should refund deposited balance on request', async () => {
@@ -129,7 +129,7 @@ contract('Alerter', (accounts) => {
 
     it('should have no subscriptions', async () => {
       (await alerter.getSubscriptionCount(cust3)).toNumber().should.be.equal(0);
-      (await alerter.getActiveSubscriptionCount(cust3)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriptionActiveCount(cust3)).toNumber().should.be.equal(0);
     });
 
     it('should allow user to create a subscription', async () => {
@@ -138,7 +138,7 @@ contract('Alerter', (accounts) => {
 
     it('should have one subscription', async () => {
       (await alerter.getSubscriptionCount(cust3)).toNumber().should.be.equal(1);
-      (await alerter.getActiveSubscriptionCount(cust3)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust3)).toNumber().should.be.equal(1);
     });
   });
 
@@ -146,7 +146,7 @@ contract('Alerter', (accounts) => {
     let id;
     it('should have no subscriptions', async () => {
       (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(0);
-      (await alerter.getActiveSubscriptionCount(cust4)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriptionActiveCount(cust4)).toNumber().should.be.equal(0);
     });
 
     it('should create a new subscription with sent eth', async () => {
@@ -157,7 +157,7 @@ contract('Alerter', (accounts) => {
 
     it('should have one subscription', async () => {
       (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(1);
-      (await alerter.getActiveSubscriptionCount(cust4)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust4)).toNumber().should.be.equal(1);
     });
 
     it('should cancel the subscription', async () => {
@@ -167,7 +167,7 @@ contract('Alerter', (accounts) => {
 
     it('should have one cancelled subscription', async () => {
       (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(1);
-      (await alerter.getActiveSubscriptionCount(cust4)).toNumber().should.be.equal(0);
+      (await alerter.getSubscriptionActiveCount(cust4)).toNumber().should.be.equal(0);
     });
 
     it('should get their money back', async () => {
@@ -183,7 +183,7 @@ contract('Alerter', (accounts) => {
       // subscription should be active
       (await alerter.getSubscriptionActive(cust5, id)).should.be.true;
       (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(1);
-      (await alerter.getActiveSubscriptionCount(cust5)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(1);
       // should not allow a non-owner to record an alert
       await expectThrow(alerter.recordAlert(0, cust5, id));
       result = await alerter.recordAlert(0, cust5, id, { from: owner });
@@ -196,6 +196,34 @@ contract('Alerter', (accounts) => {
 
     it('should have consumed the balance with that alert', async () => {
       await expectThrow(alerter.refundSubscriberBalance({ from: cust5 }));
+      // but the subscription should still be active
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(1);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(1);
+    });
+
+    it('should handle lots of subscriptions', async () => {
+      (await alerter.getSubscriptionActive(cust5, 0)).should.be.true;
+      await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      (await alerter.getSubscriptionActive(cust5, 1)).should.be.true;
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(2);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(2);
+      await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      await alerter.createSubscription(0, { from: cust5 });
+      await alerter.createSubscription(0, { from: cust5 });
+      await alerter.createSubscription(0, { from: cust5 });
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(6);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(6);
+      await alerter.cancelSubscription(1, { from: cust5 });
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(6);
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(5);
+      (await alerter.getSubscriptionActive(cust5, 1)).should.be.false;
+      await alerter.createSubscription(0, { from: cust5 });
+      await alerter.createSubscription(0, { from: cust5, value: smsprice });
+      await alerter.cancelSubscription(4, { from: cust5 });
+      (await alerter.getSubscriptionActive(cust5, 4)).should.be.false;
+      (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(6);
+      await alerter.createSubscription(0, { from: cust5 });
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(9);
     });
   });
 });
