@@ -74,14 +74,17 @@ contract Alerter is Ownable {
     return subscribers[subscriber].balance;
   }
 
+  // Total number of subscriptions, active and inactive
   function getSubscriptionCount(address subscriber) view public returns (uint) {
     return subscribers[subscriber].subscriptions.length;
   }
 
+  // Number of active subscriptions
   function getSubscriptionActiveCount(address subscriber) view public returns (uint) {
     return subscribers[subscriber].activeSubscriptions;
   }
 
+  // Get whether a subscription is active
   function getSubscriptionActive(address subscriber, uint subscriptionID) view public returns (bool) {
     return subscribers[subscriber].subscriptions[subscriptionID];
   }
@@ -113,7 +116,9 @@ contract Alerter is Ownable {
     return subscriptionID;
   }
 
+  // Called by the subscriber to cancel a subscription
   function cancelSubscription(uint subscriptionID) public {
+    require(subscribers[msg.sender].subscriptions[subscriptionID]);
     subscribers[msg.sender].subscriptions[subscriptionID] = false;
     subscribers[msg.sender].activeSubscriptions--;
     SubscriptionCancelled(msg.sender, subscriptionID);

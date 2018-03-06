@@ -214,6 +214,8 @@ contract('Alerter', (accounts) => {
       (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(6);
       (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(6);
       await alerter.cancelSubscription(1, { from: cust5 });
+      // can't cancel the same subscription twice
+      await expectThrow(alerter.cancelSubscription(1, { from: cust5 }));
       (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(6);
       (await alerter.getSubscriptionActiveCount(cust5)).toNumber().should.be.equal(5);
       (await alerter.getSubscriptionActive(cust5, 1)).should.be.false;
