@@ -184,6 +184,8 @@ contract('Alerter', (accounts) => {
       await expectThrow(alerter.recordAlert(0, cust5, id));
       result = await alerter.recordAlert(0, cust5, id, { from: owner });
       result.logs[0].event.should.be.equal('AlertRecorded');
+      // should fail to record an alert for a zero-balance customer
+      await expectThrow(alerter.recordAlert(0, cust5, id, { from: owner }));
     });
 
     it('should have consumed the balance with that alert', async () => {
