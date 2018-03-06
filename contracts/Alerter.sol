@@ -7,14 +7,20 @@ contract Alerter is Ownable {
 
   event BalanceDeposited(address from, uint value);
   event BalanceRefunded(address to, uint value);
-  event SubscriptionCreated(address from, bytes32 id, bytes info);
-  event SubscriptionCancelled(address from, bytes32 id);
+  event SubscriptionCreated(address from, uint id, bytes info);
+  event SubscriptionCancelled(address from, uint id);
   event AlertRecorded(uint alertTypeID, address from, bytes32 id);
 
   struct AlertType {
     bytes name;
     bool active;
     uint price;
+  }
+
+  struct Subscriber {
+    bool[] subscriptions;
+    uint activeSubscriptions;
+    uint balance;
   }
 
   modifier onlyValidAlertType(uint id) {
@@ -24,8 +30,7 @@ contract Alerter is Ownable {
 
   AlertType[] public alertTypes;
 
-  // Available balance
-  mapping(address => uint) internal alertBalances;
+  mapping(address => Subscriber) internal subscribers;
 
   function Alerter() public {
   }
@@ -60,21 +65,29 @@ contract Alerter is Ownable {
   }
 
   // Determine how many alerts of the given type can be sent with the current balance
-  function getAlertBalance(uint alertTypeID, address holder) onlyValidAlertType(alertTypeID) view public returns (uint) {
-    return alertBalances[holder] / alertTypes[alertTypeID].price;
+  function getAlertBalance(uint alertTypeID, address subscriber) onlyValidAlertType(alertTypeID) view public returns (uint) {
+    return subscribers[subscriber].balance / alertTypes[alertTypeID].price;
   }
 
   // Fetch the current deposit balance
-  function getDepositBalance(address holder) view public returns (uint) {
-    return alertBalances[holder];
+  function getSubscriberBalance(address subscriber) view public returns (uint) {
+    return subscribers[subscriber].balance;
+  }
+
+  function getSubscriptionCount(address subscriber) view public returns (uint) {
+    return subscribers[subscriber].subscriptions.length;
+  }
+
+  function getActiveSubscriptionCount(address subscriber) view public returns (uint) {
+    return subscribers[subscriber].activeSubscriptions;
   }
 
   // Claim a refund of the current deposit balance. Any subscriptions still active
   // will be paused until there is balance again.
-  function refundDepositBalance() public {
-    uint balance = alertBalances[msg.sender];
+  function refundSubscriberBalance() public {
+    uint balance = subscribers[msg.sender].balance;
     require(balance > 0);
-    alertBalances[msg.sender] = 0;
+    subscribers[msg.sender].balance = 0;
     BalanceRefunded(msg.sender, balance);
     msg.sender.transfer(balance);
   }
@@ -82,38 +95,39 @@ contract Alerter is Ownable {
   // Call this with the necessary (encrypted) metadata to log a subscription.
   // To reduce storage costs the actual subscription information is not stored
   // in contract, only in the log.
-  function createSubscription(bytes info) public payable returns (bytes32) {
+  function createSubscription(bytes info) public payable returns (uint) {
     // You can subscribe and make a deposit in a single call
     if (msg.value > 0) {
       receiveFunds();
     }
     // But whichever way you must have a balance to create a subscription
-    require(getDepositBalance(msg.sender) > 0);
-    bytes32 subscriptionID = keccak256(msg.data, block.number);
+    require(getSubscriberBalance(msg.sender) > 0);
+    uint subscriptionID = subscribers[msg.sender].subscriptions.length;
+    subscribers[msg.sender].subscriptions.push(true);
+    subscribers[msg.sender].activeSubscriptions++;
     SubscriptionCreated(msg.sender, subscriptionID, info);
     return subscriptionID;
   }
 
-  // Writes a message to the log that the subcription is cancelled.
-  // The alerter service will ignore it if it wasn't written by the original
-  // subcriber.
-  function cancelSubscription(bytes32 subscriptionID) public {
+  function cancelSubscription(uint subscriptionID) public {
+    subscribers[msg.sender].subscriptions[subscriptionID] = false;
+    subscribers[msg.sender].activeSubscriptions--;
     SubscriptionCancelled(msg.sender, subscriptionID);
   }
 
-  // Called by the alerter service to charge the customer for an alert that
+  // Called by the alerter service to charge the subscriber for an alert that
   // has been sent.
-  function recordAlert(uint alertTypeID, address customer, bytes32 id) public onlyValidAlertType(alertTypeID) onlyOwner {
+  function recordAlert(uint alertTypeID, address subscriber, bytes32 id) public onlyValidAlertType(alertTypeID) onlyOwner {
     // Customer must have a balance
-    require(alertBalances[customer] >= alertTypes[alertTypeID].price);
-    // Deduct fee from customer balance
-    alertBalances[customer] -= alertTypes[alertTypeID].price;
-    AlertRecorded(alertTypeID, customer, id);
+    require(subscribers[subscriber].balance >= alertTypes[alertTypeID].price);
+    // Deduct fee from subscriber balance
+    subscribers[subscriber].balance -= alertTypes[alertTypeID].price;
+    AlertRecorded(alertTypeID, subscriber, id);
   }
 
-  // Helper function which records customer deposits
+  // Helper function which records subscriber deposits
   function receiveFunds() internal {
-    alertBalances[msg.sender] += msg.value;
+    subscribers[msg.sender].balance += msg.value;
     BalanceDeposited(msg.sender, msg.value);
   }
 }

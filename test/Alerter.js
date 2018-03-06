@@ -91,12 +91,12 @@ contract('Alerter', (accounts) => {
     });
 
     it('should have no funds to refund', async () => {
-      await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
+      await expectThrow(alerter.refundSubscriberBalance({ from: cust1 }));
     });
 
     it('should deposit funds for one SMS', async () => {
       await web3.eth.sendTransaction({ from: cust1, to: alerter.address, value: smsprice });
-      (await alerter.getDepositBalance(cust1)).should.be.bignumber.equal(smsprice);
+      (await alerter.getSubscriberBalance(cust1)).should.be.bignumber.equal(smsprice);
     });
 
     it('should have funds for one SMS', async () => {
@@ -104,11 +104,11 @@ contract('Alerter', (accounts) => {
     });
 
     it('should refund deposited balance on request', async () => {
-      await alerter.refundDepositBalance({ from: cust1 });
+      await alerter.refundSubscriberBalance({ from: cust1 });
     });
 
     it('should only be able to refund when there is balance', async () => {
-      await expectThrow(alerter.refundDepositBalance({ from: cust1 }));
+      await expectThrow(alerter.refundSubscriberBalance({ from: cust1 }));
     });
   });
 
@@ -127,17 +127,37 @@ contract('Alerter', (accounts) => {
       await web3.eth.sendTransaction({ from: cust3, to: alerter.address, value: smsprice });
     });
 
+    it('should have no subscriptions', async () => {
+      (await alerter.getSubscriptionCount(cust3)).toNumber().should.be.equal(0);
+      (await alerter.getActiveSubscriptionCount(cust3)).toNumber().should.be.equal(0);
+    });
+
     it('should allow user to create a subscription', async () => {
       await alerter.createSubscription(0, { from: cust3 });
+    });
+
+    it('should have one subscription', async () => {
+      (await alerter.getSubscriptionCount(cust3)).toNumber().should.be.equal(1);
+      (await alerter.getActiveSubscriptionCount(cust3)).toNumber().should.be.equal(1);
     });
   });
 
   context('cancel subscription', () => {
     let id;
+    it('should have no subscriptions', async () => {
+      (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(0);
+      (await alerter.getActiveSubscriptionCount(cust4)).toNumber().should.be.equal(0);
+    });
+
     it('should create a new subscription with sent eth', async () => {
       const result = await alerter.createSubscription(0, { from: cust4, value: smsprice });
       result.logs[1].event.should.be.equal('SubscriptionCreated');
       id = result.logs[1].args.id; // eslint-disable-line prefer-destructuring
+    });
+
+    it('should have one subscription', async () => {
+      (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(1);
+      (await alerter.getActiveSubscriptionCount(cust4)).toNumber().should.be.equal(1);
     });
 
     it('should cancel the subscription', async () => {
@@ -145,8 +165,13 @@ contract('Alerter', (accounts) => {
       result.logs[0].event.should.be.equal('SubscriptionCancelled');
     });
 
+    it('should have one cancelled subscription', async () => {
+      (await alerter.getSubscriptionCount(cust4)).toNumber().should.be.equal(1);
+      (await alerter.getActiveSubscriptionCount(cust4)).toNumber().should.be.equal(0);
+    });
+
     it('should get their money back', async () => {
-      await alerter.refundDepositBalance({ from: cust4 });
+      await alerter.refundSubscriberBalance({ from: cust4 });
     });
   });
 
@@ -162,7 +187,7 @@ contract('Alerter', (accounts) => {
     });
 
     it('should have consumed the balance with that alert', async () => {
-      await expectThrow(alerter.refundDepositBalance({ from: cust5 }));
+      await expectThrow(alerter.refundSubscriberBalance({ from: cust5 }));
     });
   });
 });
