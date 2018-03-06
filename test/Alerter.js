@@ -180,12 +180,18 @@ contract('Alerter', (accounts) => {
       let result = await alerter.createSubscription(0, { from: cust5, value: smsprice });
       result.logs[1].event.should.be.equal('SubscriptionCreated');
       const id = result.logs[1].args.id; // eslint-disable-line prefer-destructuring
+      // subscription should be active
+      (await alerter.getSubscriptionActive(cust5, id)).should.be.true;
+      (await alerter.getSubscriptionCount(cust5)).toNumber().should.be.equal(1);
+      (await alerter.getActiveSubscriptionCount(cust5)).toNumber().should.be.equal(1);
       // should not allow a non-owner to record an alert
       await expectThrow(alerter.recordAlert(0, cust5, id));
       result = await alerter.recordAlert(0, cust5, id, { from: owner });
       result.logs[0].event.should.be.equal('AlertRecorded');
       // should fail to record an alert for a zero-balance customer
       await expectThrow(alerter.recordAlert(0, cust5, id, { from: owner }));
+      // subscription should still be active, though
+      (await alerter.getSubscriptionActive(cust5, id)).should.be.true;
     });
 
     it('should have consumed the balance with that alert', async () => {

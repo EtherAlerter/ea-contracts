@@ -82,6 +82,10 @@ contract Alerter is Ownable {
     return subscribers[subscriber].activeSubscriptions;
   }
 
+  function getSubscriptionActive(address subscriber, uint subscriptionID) view public returns (bool) {
+    return subscribers[subscriber].subscriptions[subscriptionID];
+  }
+
   // Claim a refund of the current deposit balance. Any subscriptions still active
   // will be paused until there is balance again.
   function refundSubscriberBalance() public {
