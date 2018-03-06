@@ -118,6 +118,7 @@ contract Alerter is Ownable {
 
   // Called by the subscriber to cancel a subscription
   function cancelSubscription(uint subscriptionID) public {
+    // Can only cancel an active subscription
     require(subscribers[msg.sender].subscriptions[subscriptionID]);
     subscribers[msg.sender].subscriptions[subscriptionID] = false;
     subscribers[msg.sender].activeSubscriptions--;
