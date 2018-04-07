@@ -95,7 +95,7 @@ contract Alerter is Ownable {
     uint balance = subscribers[msg.sender].balance;
     require(balance > 0);
     subscribers[msg.sender].balance = 0;
-    BalanceRefunded(msg.sender, balance);
+    emit BalanceRefunded(msg.sender, balance);
     msg.sender.transfer(balance);
   }
 
@@ -112,7 +112,7 @@ contract Alerter is Ownable {
     uint subscriptionID = subscribers[msg.sender].subscriptions.length;
     subscribers[msg.sender].subscriptions.push(true);
     subscribers[msg.sender].activeSubscriptions++;
-    SubscriptionCreated(msg.sender, subscriptionID, info);
+    emit SubscriptionCreated(msg.sender, subscriptionID, info);
     return subscriptionID;
   }
 
@@ -122,7 +122,7 @@ contract Alerter is Ownable {
     require(subscribers[msg.sender].subscriptions[subscriptionID]);
     subscribers[msg.sender].subscriptions[subscriptionID] = false;
     subscribers[msg.sender].activeSubscriptions--;
-    SubscriptionCancelled(msg.sender, subscriptionID);
+    emit SubscriptionCancelled(msg.sender, subscriptionID);
   }
 
   // Called by the alerter service to charge the subscriber for an alert that
@@ -132,12 +132,12 @@ contract Alerter is Ownable {
     require(subscribers[subscriber].balance >= alertTypes[alertTypeID].price);
     // Deduct fee from subscriber balance
     subscribers[subscriber].balance -= alertTypes[alertTypeID].price;
-    AlertRecorded(alertTypeID, subscriber, id);
+    emit AlertRecorded(alertTypeID, subscriber, id);
   }
 
   // Helper function which records subscriber deposits
   function receiveFunds() internal {
     subscribers[msg.sender].balance += msg.value;
-    BalanceDeposited(msg.sender, msg.value);
+    emit BalanceDeposited(msg.sender, msg.value);
   }
 }
