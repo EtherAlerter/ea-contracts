@@ -32,9 +32,6 @@ contract Alerter is Ownable {
 
   mapping(address => Subscriber) internal subscribers;
 
-  function Alerter() public {
-  }
-
   function () public payable {
     receiveFunds();
   }
