@@ -41,48 +41,48 @@ contract Alerter is Ownable {
     return alertTypes.push(atype);
   }
 
-  function getAlertTypeName(uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (bytes) {
+  function getAlertTypeName(uint alertTypeID) public view onlyValidAlertType(alertTypeID) returns (bytes) {
     return alertTypes[alertTypeID].name;
   }
 
-  function getAlertTypeActive(uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (bool) {
+  function getAlertTypeActive(uint alertTypeID) public view onlyValidAlertType(alertTypeID) returns (bool) {
     return alertTypes[alertTypeID].active;
   }
 
-  function setAlertTypeActive(uint alertTypeID, bool active) onlyValidAlertType(alertTypeID) public onlyOwner {
+  function setAlertTypeActive(uint alertTypeID, bool active) public onlyOwner onlyValidAlertType(alertTypeID) {
     alertTypes[alertTypeID].active = active;
   }
 
-  function getAlertTypePrice(uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (uint) {
+  function getAlertTypePrice(uint alertTypeID) public view onlyValidAlertType(alertTypeID) returns (uint) {
     return alertTypes[alertTypeID].price;
   }
 
-  function setAlertTypePrice(uint alertTypeID, uint price) onlyValidAlertType(alertTypeID) public onlyOwner {
+  function setAlertTypePrice(uint alertTypeID, uint price) public onlyOwner onlyValidAlertType(alertTypeID) {
     alertTypes[alertTypeID].price = price;
   }
 
   // Determine how many alerts of the given type can be sent with the current balance
-  function getSubscriberAlertBalance(address subscriber, uint alertTypeID) onlyValidAlertType(alertTypeID) view public returns (uint) {
+  function getSubscriberAlertBalance(address subscriber, uint alertTypeID) public view onlyValidAlertType(alertTypeID) returns (uint) {
     return subscribers[subscriber].balance / alertTypes[alertTypeID].price;
   }
 
   // Fetch the current deposit balance
-  function getSubscriberBalance(address subscriber) view public returns (uint) {
+  function getSubscriberBalance(address subscriber) public view returns (uint) {
     return subscribers[subscriber].balance;
   }
 
   // Total number of subscriptions, active and inactive
-  function getSubscriptionCount(address subscriber) view public returns (uint) {
+  function getSubscriptionCount(address subscriber) public view returns (uint) {
     return subscribers[subscriber].subscriptions.length;
   }
 
   // Number of active subscriptions
-  function getSubscriptionActiveCount(address subscriber) view public returns (uint) {
+  function getSubscriptionActiveCount(address subscriber) public view returns (uint) {
     return subscribers[subscriber].activeSubscriptions;
   }
 
   // Get whether a subscription is active
-  function getSubscriptionActive(address subscriber, uint subscriptionID) view public returns (bool) {
+  function getSubscriptionActive(address subscriber, uint subscriptionID) public view returns (bool) {
     return subscribers[subscriber].subscriptions[subscriptionID];
   }
 
@@ -124,7 +124,7 @@ contract Alerter is Ownable {
 
   // Called by the alerter service to charge the subscriber for an alert that
   // has been sent.
-  function recordAlert(uint alertTypeID, address subscriber, bytes32 id) public onlyValidAlertType(alertTypeID) onlyOwner {
+  function recordAlert(uint alertTypeID, address subscriber, bytes32 id) public onlyOwner onlyValidAlertType(alertTypeID) {
     // Customer must have a balance
     require(subscribers[subscriber].balance >= alertTypes[alertTypeID].price);
     // Deduct fee from subscriber balance
